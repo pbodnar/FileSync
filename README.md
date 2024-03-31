@@ -36,7 +36,7 @@ None.
 ```json
 { "source": "C:\\Dev\\Apple", "destination": "Z:\\Stage\\Apple" }
 ```
-* `source`: *String* - Root path of your workspace folder. Any files saved will be copied out to the `destination`.
+* `source`: *String* - Path of your workspace folder (root, or any subfolder). Any files saved will be copied out to the `destination`.
 * `desitnation`: *String* - Path of folder to keep in sync with workspace folder (`source`).
 
 ### Multi-Destination Mapping
@@ -53,7 +53,7 @@ None.
 	]
 }
 ```
-* `source`: *String* - Root path of your workspace folder. Any files saved will be copied out to all `destination`s defined.
+* `source`: *String* - Path of your workspace folder (root, or any subfolder). Any files saved will be copied out to all `destination`s defined.
 * ``destination``: *Array* of destinations, either **simple** or **complex**.
   * **simple**: *String* - Path of folder to keep in sync with workspace folder (`source`).
   * **complex**: *Object* - Defines a ``path``, ``name`` and if destination is ``active`` or disabled.

@@ -46,19 +46,18 @@ export class FileSync {
 
 		// Listen for Workspace folder changes.
 		context.subscriptions.push(vscode.workspace.onDidChangeWorkspaceFolders((folderChanges) => {
-			// Create save listener for each new folder.
-			folderChanges.added.forEach(this.createListener, this);
+			// Create save listeners for each new folder.
+			folderChanges.added.forEach(this.createListeners, this);
 
-			// Remove save listener for removed folders.
+			// Remove save listeners for removed folders.
 			folderChanges.removed.forEach((folder) => {
-				//Get listener index.
-				let l = this.onSave.findIndex(listener => listener.root.toLowerCase() === folder.uri.fsPath.toLowerCase());
-				if(l >= 0) {
+				let listeners = this.onSave.filter(listener => this.isRootOrNested(listener.root, folder.uri.fsPath));
+				listeners.forEach(listener => {
 					// Dispose and remove.
-					this.onSave[l].save.dispose();
-					this.onSave.splice(l, 1);
-					this.log(`Removed Listener: ${folder.uri.fsPath}`);
-				}
+					listener.save.dispose();
+					this.onSave.splice(this.onSave.indexOf(listener), 1);
+					this.log(`Removed listener for ${listener.root}`);
+				});
 			});
 		}));
 
@@ -74,7 +73,7 @@ export class FileSync {
 			//Check if workspace.
 			if (vscode.workspace.workspaceFolders) {
 				// Iterate through the folders in the workspace.
-				vscode.workspace.workspaceFolders.forEach(this.createListener, this);
+				vscode.workspace.workspaceFolders.forEach(this.createListeners, this);
 				this.enabled = true;
 				this.sbar.show();
 				vscode.window.showInformationMessage("File Sync is Active.");
@@ -86,18 +85,20 @@ export class FileSync {
 		}
 	}
 
-	createListener(folder:vscode.WorkspaceFolder) {
+	createListeners(folder:vscode.WorkspaceFolder) {
 		let root = folder.uri.fsPath;
 		this.log(`Checking ${root}...`);
 
 		//Look for mapping.
-		let map = this.mappings().find(m => m.source.toLowerCase() === root.toLowerCase());
-		if(map){
+		let mappings = this.mappings().filter(m => this.isRootOrNested(m.source, root));
+		if (mappings.length > 0) {
 			//Mapping found, enable FileSync for map.
-			let save = vscode.workspace.onDidSaveTextDocument((file) => { if(map){ this.syncSave(map, file); } });
-			this.onSave.push({'root':root, 'save':save});
-			this.context.subscriptions.push(save);
-			this.log(`Save listener enabled for ${map.source}.`);
+			mappings.forEach(map => {
+				let save = vscode.workspace.onDidSaveTextDocument((file) => { if(map){ this.syncSave(map, file); } });
+				this.onSave.push({'root':map.source, 'save':save});
+				this.context.subscriptions.push(save);
+				this.log(`Save listener enabled for ${map.source}.`);
+			});
 		} else {
 			vscode.window.showWarningMessage(`No mapping found for ${root}.`,);
 			this.log(`Failed! ${root} not mapped.`);
@@ -155,6 +156,11 @@ export class FileSync {
 				this.sbar.text = this.sbar.text + (this.sbar.text === "$(file-symlink-file)" ? ` ${file.fileName} synced to ${dest.fsPath}` : ` & ${dest.fsPath}` );
 				setTimeout(() => { this.sbar.text = "$(file-symlink-file)";}, 5*1000);
 			}, err => { this.log(`Failed! (${dest.fsPath})\n↳\t${err.message}`); vscode.window.showErrorMessage(err.message); });
+	}
+
+	isRootOrNested(folder: string, root: string): boolean {
+		const sep = require('path').sep;
+		return (folder + sep).toLowerCase().startsWith((root + sep).toLowerCase());
 	}
 
 	log(msg: any) {

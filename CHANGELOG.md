@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Ignore pattern support.
+- Workspace subfolders support.
 
 ## [1.1.0] - 2020-05-04
 ### Added
